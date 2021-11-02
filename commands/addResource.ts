@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction, Message } from 'discord.js';
+import { CommandInteraction, Message, MessageActionRow, MessageButton } from 'discord.js';
 import isValidUrl from '../utils/urlChecker';
 
 export const data = new SlashCommandBuilder()
@@ -23,8 +23,10 @@ export async function execute(interaction: CommandInteraction) {
             content: `you are submiting ${userInput} as a new resource. \n Is this link correct? [Y/N]`,
             ephemeral: true,
         })
+
         const collection = await interaction.channel?.awaitMessages({ filter, max: 1, time: 15000, errors: ['time'] })
         collection?.map((message: Message) => {
+            console.log(message);
             switch (message.content.toLowerCase()) {
                 case 'y':
                     interaction.followUp({
