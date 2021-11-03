@@ -42,6 +42,9 @@ export class ResourceBuilder {
     if (this.tags == null || this.tags === undefined || this.tags.length === 0) {
       throw new ResourceBuilderError('Unable to build incomplete Resource')
     }
+    if (this.blockchain == null || this.blockchain === undefined || this.blockchain.length === 0) {
+      throw new ResourceBuilderError('Unable to build incomplete Resource')
+    }
     return new Resource(
       this.contributor,
       this.author,
