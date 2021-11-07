@@ -34,7 +34,7 @@ export const data = new SlashCommandBuilder()
         .addChoice('Paid Course', 'Paid Course')
         .addChoice('Free Course', 'Free Course'));
 
-function getSanitizedResourceInfo(interaction: CommandInteraction): Resource {
+  function getSanitizedResourceInfo(interaction: CommandInteraction): Resource {
    const source = interaction.options.getString('url') ?? '';
    const title = interaction.options.getString('title') ?? '';
    const summary = interaction.options.getString('summary') ?? '';
@@ -211,6 +211,9 @@ export async function execute(interaction: CommandInteraction) {
          ephemeral: true,
        })
        return;
+     }
+     else {
+      // TODO: Add resource to airtable
      }
     })
 }

@@ -1,8 +1,9 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction, Message, MessageEmbed } from 'discord.js';
+import { CommandInteraction, Message, MessageActionRow, MessageButton, MessageEmbed } from 'discord.js';
 import { ResourceBuilder, isContributor, isValidUrl } from '../utils';
-import { setCategorySelection, setBlockchainSelection, setLevelSelection, setMediaTypeSelection, setTagSelection } from './menuSelections';
+import { setCategorySelection, setBlockchainSelection, setTagSelection } from './menuSelections';
 import { addContributor } from './interactions'
+import { Resource } from '../types';
 
 export const data = new SlashCommandBuilder()
     .setName('add-resource-extended')
@@ -45,8 +46,8 @@ function ConfigureEmbed(embed: MessageEmbed, resource: ResourceBuilder): Message
     { name: 'mediatype', value: resource.mediaType ?? 'Media Type', inline: true },
     { name: 'blockchain', value: resource.blockchain ? resource.blockchain.map(b => b.name).join(', ') : 'Blockchain', inline: false },
     { name: 'category', value: resource.category ? resource.category.map(c => c.name).join(', ') : 'Category', inline: true },
-    { name: 'tags', value: resource.tags ? resource.tags.map(t => t.name).join(', ') : 'Tags', inline: true },
   ]);
+  embed.setFooter(`Tags: ${resource.tags ? resource.tags.map(t => t.name).join(', ') : ''}`)
 
   return embed;
 }
@@ -57,18 +58,26 @@ function UpdateEmbed(embed: MessageEmbed, embedMessage: Message, resource: Resou
 }
 
 export async function execute(interaction: CommandInteraction) {
-
-  interaction.options.get
+  const source = interaction.options.getString('url') ?? '';
+  const title = interaction.options.getString('title') ?? '';
+  const summary = interaction.options.getString('summary') ?? '';
+  const level = interaction.options.getString('level') ?? '';
+  const mediaType = interaction.options.getString('media') ?? '';
 
   const userInput = interaction.options.getString('url')
   if (userInput === undefined || userInput == null) {
       return;
     }
 
-    if (isValidUrl(userInput)) {
+    if (isValidUrl(source)) {
         const newResource = new ResourceBuilder();
-        newResource.source = userInput;
-        const filter = (m: Message) => interaction.user.id === m.author.id;
+        newResource.source = source;
+        newResource.title = title;
+        newResource.summary = summary;
+        newResource.level = level;
+        newResource.mediaType = mediaType;
+        newResource.author = '';
+
         await interaction.reply({ content: 'Please complete the addition process in the DM you just received', ephemeral: true });
         const dmChannel = await interaction.user.createDM();
 
@@ -87,51 +96,61 @@ export async function execute(interaction: CommandInteraction) {
 
         const resourceEmbed = ConfigureEmbed(new MessageEmbed(), newResource);
         const embedMessage = await dmChannel.send({ embeds: [resourceEmbed] });
-        const originalMessage = await dmChannel.send('Article title');
-        const receivedMessages = await originalMessage.channel.awaitMessages({ filter, max: 1 })
-        const titleMessage = receivedMessages.first();
-        if (titleMessage) {
-          newResource.title = titleMessage.content ?? ''
-          originalMessage.delete();
-          UpdateEmbed(resourceEmbed, embedMessage, newResource);
-        }
-
-        const summaryRequest = await dmChannel.send('Article summary');
-        const summaryMessages = await summaryRequest.channel.awaitMessages({ filter, max: 1 })
-        const summaryMessage = summaryMessages.first();
-        if (summaryMessage) {
-          newResource.summary = summaryMessage.content ?? ''
-          summaryRequest.delete();
-          UpdateEmbed(resourceEmbed, embedMessage, newResource);
-        }
-
-        const levelMessage = await setLevelSelection(dmChannel);
-        const levelResponse = await dmChannel.awaitMessageComponent<'SELECT_MENU'>();
-        newResource.level = levelResponse.values[0];
-        levelMessage.delete();
-        newResource.level = levelResponse.values[0];
-        UpdateEmbed(resourceEmbed, embedMessage, newResource);
-
-        const mediaMessage = await setMediaTypeSelection(dmChannel);
-        const mediaTypeResponse = await dmChannel.awaitMessageComponent<'SELECT_MENU'>();
-        newResource.mediaType = mediaTypeResponse.values[0];
-        mediaMessage.delete();
-        UpdateEmbed(resourceEmbed, embedMessage, newResource);
-
         const blockchainResponses = await setBlockchainSelection(dmChannel);
         newResource.blockchain = blockchainResponses;
-        UpdateEmbed(resourceEmbed, embedMessage, newResource);
-
-        const tagsResponses = await setTagSelection(dmChannel);
-        newResource.tags = tagsResponses;
         UpdateEmbed(resourceEmbed, embedMessage, newResource);
 
         const categoryResponses = await setCategorySelection(dmChannel);
         newResource.category = categoryResponses;
         UpdateEmbed(resourceEmbed, embedMessage, newResource);
 
-        console.log(newResource.build());
-        // TODO: Send this to AirTable
+        const tagsResponses = await setTagSelection(dmChannel);
+        newResource.tags = tagsResponses;
+        UpdateEmbed(resourceEmbed, embedMessage, newResource);
+
+        const resource = newResource.build();
+        console.log(resource);
+
+        const REPLY = {
+          YES: 'yes',
+          NO: 'no',
+        };
+
+        const noButton = new MessageButton()
+          .setCustomId(REPLY.NO)
+          .setLabel('Cancel')
+          .setStyle('DANGER');
+        const yesButton = new MessageButton()
+          .setCustomId(REPLY.YES)
+          .setLabel('Add resource')
+          .setStyle('PRIMARY');
+        const buttonRow = new MessageActionRow()
+          .addComponents(
+            noButton,
+            yesButton,
+          );
+
+        await embedMessage.edit({
+          components: [buttonRow],
+        });
+
+        const buttonReply = await dmChannel.awaitMessageComponent({ componentType: 'BUTTON' });
+        if (!buttonReply) {
+          return;
+        }
+
+        const buttonSelected = buttonReply.customId;
+        buttonReply.update({ embeds: [resourceEmbed], components: [] });
+        if (buttonSelected === REPLY.NO) {
+          buttonReply.followUp({
+            content: `"${resource.title}" was not added`,
+            ephemeral: true,
+          })
+          return;
+        }
+        else {
+          // TODO: Add resource to airtable
+        }
     }
     else {
       await interaction.reply({ content: 'Invalid URL! Please try again.', ephemeral: true })
