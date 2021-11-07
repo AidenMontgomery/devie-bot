@@ -4,7 +4,7 @@ import { createTag } from '../utils';
 
 export const data = new SlashCommandBuilder()
     .setName('add-tag')
-    .setDescription('Adds a tag to the knowledgebase')
+    .setDescription('Adds a tag to the knowledge base')
     .addStringOption(
       option => option.setRequired(true)
       .setName('tag')
@@ -23,7 +23,7 @@ export async function execute(interaction: CommandInteraction) {
     .setStyle('DANGER');
   const yesButton = new MessageButton()
     .setCustomId(REPLY.YES)
-    .setLabel('Add blockchain')
+    .setLabel('Add tag')
     .setStyle('PRIMARY');
   const buttonRow = new MessageActionRow()
     .addComponents(

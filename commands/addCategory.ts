@@ -4,7 +4,7 @@ import { createCategory } from '../utils';
 
 export const data = new SlashCommandBuilder()
     .setName('add-category')
-    .setDescription('Adds a category to the knowledgebase')
+    .setDescription('Adds a category to the knowledge base')
     .addStringOption(
       option => option.setRequired(true)
       .setName('category')
@@ -23,7 +23,7 @@ export async function execute(interaction: CommandInteraction) {
     .setStyle('DANGER');
   const yesButton = new MessageButton()
     .setCustomId(REPLY.YES)
-    .setLabel('Add blockchain')
+    .setLabel('Add category')
     .setStyle('PRIMARY');
   const buttonRow = new MessageActionRow()
     .addComponents(

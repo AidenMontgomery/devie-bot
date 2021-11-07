@@ -4,7 +4,7 @@ import { createBlockchain } from '../utils';
 
 export const data = new SlashCommandBuilder()
     .setName('add-blockchain')
-    .setDescription('Adds a blockchain to the knowledgebase')
+    .setDescription('Adds a blockchain to the knowledge base')
     .addStringOption(
       option => option.setRequired(true)
       .setName('blockchain')
