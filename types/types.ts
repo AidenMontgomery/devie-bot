@@ -11,9 +11,9 @@ export type Resource = {
   source: string;
   level: string;
   mediaType: string;
-  blockchain?: LookupItem[];
-  category: LookupItem[];
-  tags: LookupItem[];
+  blockchain?: string[];
+  category: string[];
+  tags: string[];
 }
 
 export type Author = {

@@ -63,7 +63,7 @@ export async function execute(interaction: CommandInteraction) {
   }
   else {
     try {
-      createBlockchain(blockchain, website);
+      await createBlockchain(blockchain, website);
       await interaction.editReply('Thank you. The blockchain has been added.');
     }
     catch (e) {

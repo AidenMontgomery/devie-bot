@@ -4,7 +4,7 @@ export class ResourceBuilderError extends Error {}
 
 export class ResourceBuilder {
   public contributor?: string;
-  public author?: string;
+  public author?: LookupItem;
   public title?: string;
   public summary?: string;
   public source?: string;
@@ -47,15 +47,15 @@ export class ResourceBuilder {
     }
     return {
       contributor: this.contributor,
-      author: this.author,
+      author: this.author.id,
       title: this.title.trim(),
       summary: this.summary.trim(),
       source: this.source.trim(),
       level: this.level.trim(),
       mediaType: this.mediaType.trim(),
-      blockchain: this.blockchain,
-      category: this.category,
-      tags: this.tags,
+      blockchain: this.blockchain.map(bc => bc.id),
+      category: this.category.map(c => c.id),
+      tags: this.tags.map(t => t.id),
     };
   }
 }

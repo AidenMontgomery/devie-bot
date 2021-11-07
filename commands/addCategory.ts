@@ -58,7 +58,7 @@ export async function execute(interaction: CommandInteraction) {
   }
   else {
     try {
-      createCategory(category);
+      await createCategory(category);
       await interaction.editReply('Thank you. The category has been added.');
     }
     catch (e) {

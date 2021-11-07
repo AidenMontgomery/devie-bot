@@ -1,9 +1,8 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction, Message, MessageActionRow, MessageButton, MessageEmbed } from 'discord.js';
-import { ResourceBuilder, isContributor, isValidUrl } from '../utils';
-import { setCategorySelection, setBlockchainSelection, setTagSelection } from './menuSelections';
+import { ResourceBuilder, isContributor, isValidUrl, findContributor } from '../utils';
+import { setAuthorSelection, setCategorySelection, setBlockchainSelection, setTagSelection } from './menuSelections';
 import { addContributor } from './interactions'
-import { Resource } from '../types';
 
 export const data = new SlashCommandBuilder()
     .setName('add-resource-extended')
@@ -37,7 +36,7 @@ export const data = new SlashCommandBuilder()
         .addChoice('Free Course', 'Free Course'));
 
 function ConfigureEmbed(embed: MessageEmbed, resource: ResourceBuilder): MessageEmbed {
-  embed.setAuthor(resource.author ?? 'Author');
+  embed.setAuthor(resource.author?.name ?? 'Author');
   embed.setTitle(resource.title ?? 'Title');
   embed.setURL(resource.source ?? 'Source');
   embed.setDescription(resource.summary ?? 'Summary');
@@ -76,7 +75,6 @@ export async function execute(interaction: CommandInteraction) {
         newResource.summary = summary;
         newResource.level = level;
         newResource.mediaType = mediaType;
-        newResource.author = '';
 
         await interaction.reply({ content: 'Please complete the addition process in the DM you just received', ephemeral: true });
         const dmChannel = await interaction.user.createDM();
@@ -85,17 +83,20 @@ export async function execute(interaction: CommandInteraction) {
           newResource.contributor = await addContributor(dmChannel);
         }
         else {
-          // TODO: Get the contributorID from AirTable
-          // newResource.contributor = await getContributorId(dmChannel.recipient.discriminator);
+          const contributorResponse = await findContributor(dmChannel.recipient);
+          if (contributorResponse) {
+            newResource.contributor = contributorResponse.getId();
+          }
         }
 
         await dmChannel.send('Please enter more information about the article');
 
-        // TODO: Work out how to add an Author
-        newResource.author = 'Testing'
-
         const resourceEmbed = ConfigureEmbed(new MessageEmbed(), newResource);
         const embedMessage = await dmChannel.send({ embeds: [resourceEmbed] });
+        const authorResponses = await setAuthorSelection(dmChannel);
+        newResource.author = authorResponses[0];
+        UpdateEmbed(resourceEmbed, embedMessage, newResource);
+
         const blockchainResponses = await setBlockchainSelection(dmChannel);
         newResource.blockchain = blockchainResponses;
         UpdateEmbed(resourceEmbed, embedMessage, newResource);

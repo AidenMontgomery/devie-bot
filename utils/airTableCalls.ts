@@ -1,97 +1,124 @@
 import Airtable from 'airtable';
 import { User } from 'discord.js';
 import dotenv from 'dotenv'
-import { LookupItem } from '../types';
+import { LookupItem, Resource } from '../types';
 
 dotenv.config()
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const BASE = new Airtable({ apiKey: process.env.AIRTABLE_TOKEN! }).base(process.env.AIRTABLE_BASE!)
 
 export async function isContributor(user: User) {
-    const table = BASE('Contributor')
-    const contributors = await table.select({
-        // eslint-disable-next-line quotes
-        filterByFormula: "NOT({DiscordId} = '')",
-    }).all();
-    for (const record of contributors) {
-        if (user.discriminator === record.fields.DiscordId) {
-            return true
-        }
+    const foundUser = await findContributor(user);
+    if (foundUser) {
+      return true;
     }
-    return false
+    else {
+      return false;
+    }
 }
 
 export async function createContributor(user: User, nftID: string, twitterHandle: string, ethWalletAddress: string) {
     const table = BASE('Contributor')
-    table.create([
+    const records = await table.create([
         {
             'fields': {
-                'Discord Handle': `${user.username}:${user.discriminator}`,
+                // 'Discord Handle': `${user.username}:${user.discriminator}`,
                 'DiscordId': `${user.id}`,
-                'DevDAO ID': nftID,
+                'DevDAO ID': parseInt(nftID),
                 'Twitter Handle': twitterHandle,
                 'ETH Wallet Address': ethWalletAddress,
             },
         },
-    ], (err, records) => {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        records?.forEach((record) => console.log(record.getId()));
-    })
+    ]);
+
+    if (records.length === 1) {
+      const addedRecord = records[0];
+      return addedRecord.getId();
+    }
 }
 
-export function createTag(tag: string) {
+export async function createTag(tag: string) {
   const table = BASE('Tags');
-  table.create([
+  const records = await table.create([
     {
       'fields': {
         Name: tag,
       },
     },
-  ], (err, records) => {
-    if (err) {
-      console.error(err)
-      return;
-    }
-    records?.forEach((record) => console.log(record.getId()));
-  })
+  ]);
+  records?.forEach((record) => console.log(record.getId()));
 }
 
-export function createCategory(category: string) {
+export async function createCategory(category: string) {
   const table = BASE('Category');
-  table.create([
+  const records = await table.create([
     {
       'fields': {
         Name: category,
       },
     },
-  ], (err, records) => {
-    if (err) {
-      console.error(err)
-      return;
-    }
-    records?.forEach((record) => console.log(record.getId()));
-  })
+  ])
+  records?.forEach((record) => console.log(record.getId()));
 }
 
-export function createBlockchain(blockchain: string, website: string | null) {
+export async function createBlockchain(blockchain: string, website: string | null) {
   const table = BASE('Blockchain');
-  table.create([
+  const records = await table.create([
     {
       'fields': {
         Name: blockchain,
         Website: website ?? '',
       },
     },
-  ], (err, records) => {
-    if (err) {
-      console.error(err)
-      return;
-    }
-    records?.forEach((record) => console.log(record.getId()));
-  })
+  ])
+  records?.forEach((record) => console.log(record.getId()));
+}
+
+export async function createResource(resource: Resource) {
+  try {
+    const table = BASE('Resources');
+    const records = await table.create([
+    {
+      fields: {
+        Title: resource.title,
+        Source: resource.source,
+        Summary: resource.summary,
+        Level: resource.level,
+        Blockchain: resource.blockchain,
+        Category: resource.category,
+        Tags: resource.tags,
+        'Media Type': resource.mediaType,
+        Author: [resource.author],
+        Contributor: [resource.contributor],
+      },
+    },
+    ]);
+    console.log(records);
+  }
+  catch (error) {
+    console.error(error);
+  }
+}
+
+export async function findContributor(user: User) {
+  const table = BASE('Contributor');
+  // const discordHandle = `${user.username}:${user.discriminator}`;
+  const discordID = `${user.id}`;
+  const records = await table.select({
+    // filterByFormula: `{Discord Handle} = '${discordHandle}'`,
+    filterByFormula: `{DiscordId} = '${discordID}'`,
+    maxRecords: 1,
+    view: 'Grid view',
+  });
+  if (records) {
+    const all = await records.all();
+    console.log(all);
+    return all[0];
+  }
+}
+
+export function readAuthors(): Promise<LookupItem[]> {
+  return readLookup('Authors');
 }
 
 export function readTags(): Promise<LookupItem[]> {
@@ -107,7 +134,7 @@ export function readBlockchain(): Promise<LookupItem[]> {
 }
 
 export function readLookup(tableName: string): Promise<LookupItem[]> {
-    return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const table = BASE(tableName);
     const items: LookupItem[] = [];
     table.select({
