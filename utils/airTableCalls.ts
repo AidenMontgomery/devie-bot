@@ -77,7 +77,7 @@ export async function createBlockchain(blockchain: string, website: string | nul
 export async function createResource(resource: Resource) {
   try {
     const table = BASE('Resources');
-    const records = await table.create([
+    await table.create([
     {
       fields: {
         Title: resource.title,
@@ -93,10 +93,11 @@ export async function createResource(resource: Resource) {
       },
     },
     ]);
-    console.log(records);
+    return { success: true };
   }
   catch (error) {
     console.error(error);
+    return { success: false, error };
   }
 }
 

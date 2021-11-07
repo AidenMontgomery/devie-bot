@@ -237,9 +237,21 @@ export async function execute(interaction: CommandInteraction) {
       return;
     }
     else {
-      // TODO: Add resource to airtable
-      console.log(resource.build());
-      await createResource(resource.build());
+      const result = await createResource(resource.build());
+      if (result.success) {
+        interaction.editReply({
+          content: 'Resource was added. Thank you for your contribution',
+          embeds: [],
+          components: [],
+        });
+      }
+      else {
+        interaction.editReply({
+          content: 'Resource addition failed. ${error}',
+          embeds: [],
+          components: [],
+        });
+      }
     }
   })
 }

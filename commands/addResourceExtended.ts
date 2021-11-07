@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction, Message, MessageActionRow, MessageButton, MessageEmbed } from 'discord.js';
-import { ResourceBuilder, isContributor, isValidUrl, findContributor } from '../utils';
+import { ResourceBuilder, isContributor, isValidUrl, findContributor, createResource } from '../utils';
 import { setAuthorSelection, setCategorySelection, setBlockchainSelection, setTagSelection } from './menuSelections';
 import { addContributor } from './interactions'
 
@@ -150,7 +150,21 @@ export async function execute(interaction: CommandInteraction) {
           return;
         }
         else {
-          // TODO: Add resource to airtable
+          const result = await createResource(newResource.build());
+          if (result.success) {
+            interaction.editReply({
+              content: 'Resource was added. Thank you for your contribution',
+              embeds: [],
+              components: [],
+            });
+          }
+          else {
+            interaction.editReply({
+              content: 'Resource addition failed. ${error}',
+              embeds: [],
+              components: [],
+            });
+          }
         }
     }
     else {
