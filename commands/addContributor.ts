@@ -30,7 +30,7 @@ export async function execute(interaction: CommandInteraction) {
 
     console.log(devDAOID, twitterHandle, ethWalletAddress);
 
-    // await createContributor(interaction.user, devDAOID, twitterHandle, ethWalletAddress);
-    // interaction.reply({ content: 'You added yourself as a contributer! Congrats', ephemeral: true })
+    await createContributor(interaction.user, devDAOID ?? '', twitterHandle ?? '', ethWalletAddress ?? '');
+    interaction.reply({ content: 'You added yourself as a contributer! Congrats', ephemeral: true })
     return
 }

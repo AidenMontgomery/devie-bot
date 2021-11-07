@@ -2,7 +2,6 @@ import Airtable from 'airtable';
 import { User } from 'discord.js';
 import dotenv from 'dotenv'
 import { LookupItem } from '../types';
-import isDiscordId from './discordIdChecker'
 
 dotenv.config()
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -22,7 +21,7 @@ export async function isContributor(user: User) {
     return false
 }
 
-export async function createContributor(user: User, nftID: string, twitterHandle?: string, ethWalletAddress?: string) {
+export async function createContributor(user: User, nftID: string, twitterHandle: string, ethWalletAddress: string) {
     const table = BASE('Contributor')
     table.create([
         {
