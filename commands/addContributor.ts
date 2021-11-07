@@ -27,9 +27,6 @@ export async function execute(interaction: CommandInteraction) {
     const devDAOID = interaction.options.getString('devdao-id');
     const twitterHandle = interaction.options.getString('twitter');
     const ethWalletAddress = interaction.options.getString('eth-wallet-address');
-
-    console.log(devDAOID, twitterHandle, ethWalletAddress);
-
     await createContributor(interaction.user, devDAOID ?? '', twitterHandle ?? '', ethWalletAddress ?? '');
     interaction.reply({ content: 'You added yourself as a contributer! Congrats', ephemeral: true })
     return

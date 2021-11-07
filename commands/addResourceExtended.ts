@@ -110,8 +110,6 @@ export async function execute(interaction: CommandInteraction) {
         UpdateEmbed(resourceEmbed, embedMessage, newResource);
 
         const resource = newResource.build();
-        console.log(resource);
-
         const REPLY = {
           YES: 'yes',
           NO: 'no',
@@ -150,20 +148,25 @@ export async function execute(interaction: CommandInteraction) {
           return;
         }
         else {
-          const result = await createResource(newResource.build());
+          const result = await createResource(resource);
           if (result.success) {
-            interaction.editReply({
+            const messageDetails = {
               content: 'Resource was added. Thank you for your contribution',
               embeds: [],
               components: [],
-            });
+            };
+
+            interaction.editReply(messageDetails);
+            embedMessage.edit(messageDetails);
           }
           else {
-            interaction.editReply({
+            const messageDetails = {
               content: 'Resource addition failed. ${error}',
               embeds: [],
               components: [],
-            });
+            };
+            interaction.editReply(messageDetails);
+            embedMessage.edit(messageDetails);
           }
         }
     }
