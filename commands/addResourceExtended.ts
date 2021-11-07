@@ -1,15 +1,39 @@
-import { SlashCommandBuilder, inlineCode } from '@discordjs/builders';
+import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction, Message, MessageEmbed } from 'discord.js';
-import { ResourceBuilder, isContributor, isValidUrl } from '../utils/index';
+import { ResourceBuilder, isContributor, isValidUrl } from '../utils';
 import { setCategorySelection, setBlockchainSelection, setLevelSelection, setMediaTypeSelection, setTagSelection } from './menuSelections';
+import { addContributor } from './interactions'
 
 export const data = new SlashCommandBuilder()
     .setName('add-resource-extended')
-    .setDescription('Adds your link to the knowledgebase (must be airtable link)')
+    .setDescription('Adds a resource to the Developer DAO knowledge base')
     .addStringOption(
         option => option.setRequired(true)
         .setName('url')
-        .setDescription('Enter a link to a resource'));
+        .setDescription('Enter a link to a resource'))
+    .addStringOption(
+      option => option.setRequired(true)
+      .setName('title')
+      .setDescription('Enter the resource title'))
+    .addStringOption(
+      option => option.setRequired(true)
+      .setName('summary')
+      .setDescription('Enter the resource summary'))
+    .addStringOption(option =>
+      option.setName('level')
+        .setDescription('The resource level')
+        .setRequired(true)
+        .addChoice('Beginner', 'Beginner')
+        .addChoice('Intermediate', 'Intermediate')
+        .addChoice('Advanced', 'Advanced'))
+    .addStringOption(option =>
+      option.setName('media')
+        .setDescription('Media type')
+        .setRequired(true)
+        .addChoice('Article', 'Article')
+        .addChoice('Video', 'Video')
+        .addChoice('Paid Course', 'Paid Course')
+        .addChoice('Free Course', 'Free Course'));
 
 function ConfigureEmbed(embed: MessageEmbed, resource: ResourceBuilder): MessageEmbed {
   embed.setAuthor(resource.author ?? 'Author');
@@ -19,9 +43,9 @@ function ConfigureEmbed(embed: MessageEmbed, resource: ResourceBuilder): Message
   embed.setFields([
     { name: 'level', value: resource.level ?? 'Level', inline: true },
     { name: 'mediatype', value: resource.mediaType ?? 'Media Type', inline: true },
-    { name: 'blockchain', value: resource.blockchain ? resource.blockchain.join(', ') : 'Blockchain', inline: false },
-    { name: 'category', value: resource.category ? resource.category.join(', ') : 'Category', inline: true },
-    { name: 'tags', value: resource.tags ? resource.tags.join(', ') : 'Tags', inline: true },
+    { name: 'blockchain', value: resource.blockchain ? resource.blockchain.map(b => b.name).join(', ') : 'Blockchain', inline: false },
+    { name: 'category', value: resource.category ? resource.category.map(c => c.name).join(', ') : 'Category', inline: true },
+    { name: 'tags', value: resource.tags ? resource.tags.map(t => t.name).join(', ') : 'Tags', inline: true },
   ]);
 
   return embed;
@@ -33,17 +57,13 @@ function UpdateEmbed(embed: MessageEmbed, embedMessage: Message, resource: Resou
 }
 
 export async function execute(interaction: CommandInteraction) {
-  if (!await isContributor(interaction.user.id)) {
-    await interaction.reply(`it looks like you are not a contributor yet!\nPlease add yourself using: ${inlineCode('/add-contributor')}`)
-    return
-  }
+
+  interaction.options.get
+
   const userInput = interaction.options.getString('url')
   if (userInput === undefined || userInput == null) {
       return;
     }
-
-    // TODO: Lookup the user's discord ID in AirTable and see if they are already a contributor
-    // TODO: Ask the user for their NFT ID if they have not contributed before
 
     if (isValidUrl(userInput)) {
         const newResource = new ResourceBuilder();
@@ -52,13 +72,18 @@ export async function execute(interaction: CommandInteraction) {
         await interaction.reply({ content: 'Please complete the addition process in the DM you just received', ephemeral: true });
         const dmChannel = await interaction.user.createDM();
 
+        if (!await isContributor(interaction.user)) {
+          newResource.contributor = await addContributor(dmChannel);
+        }
+        else {
+          // TODO: Get the contributorID from AirTable
+          // newResource.contributor = await getContributorId(dmChannel.recipient.discriminator);
+        }
+
         await dmChannel.send('Please enter more information about the article');
 
         // TODO: Work out how to add an Author
         newResource.author = 'Testing'
-
-        // TODO: Work out how to add a Contributor
-        newResource.contributor = 'Testing'
 
         const resourceEmbed = ConfigureEmbed(new MessageEmbed(), newResource);
         const embedMessage = await dmChannel.send({ embeds: [resourceEmbed] });
@@ -93,22 +118,16 @@ export async function execute(interaction: CommandInteraction) {
         mediaMessage.delete();
         UpdateEmbed(resourceEmbed, embedMessage, newResource);
 
-        const blockchainMessage = await setBlockchainSelection(dmChannel);
-        const blockchainResponse = await dmChannel.awaitMessageComponent<'SELECT_MENU'>();
-        newResource.blockchain = blockchainResponse.values;
-        blockchainMessage.delete();
+        const blockchainResponses = await setBlockchainSelection(dmChannel);
+        newResource.blockchain = blockchainResponses;
         UpdateEmbed(resourceEmbed, embedMessage, newResource);
 
-        const tagsMessage = await setTagSelection(dmChannel);
-        const tagsResponse = await dmChannel.awaitMessageComponent<'SELECT_MENU'>();
-        newResource.tags = tagsResponse.values;
-        tagsMessage.delete();
+        const tagsResponses = await setTagSelection(dmChannel);
+        newResource.tags = tagsResponses;
         UpdateEmbed(resourceEmbed, embedMessage, newResource);
 
-        const categoryMessage = await setCategorySelection(dmChannel);
-        const categoryResponse = await dmChannel.awaitMessageComponent<'SELECT_MENU'>();
-        newResource.category = categoryResponse.values;
-        categoryMessage.delete();
+        const categoryResponses = await setCategorySelection(dmChannel);
+        newResource.category = categoryResponses;
         UpdateEmbed(resourceEmbed, embedMessage, newResource);
 
         console.log(newResource.build());
